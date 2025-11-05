@@ -3,42 +3,46 @@ package external
 import (
 	"bytes"
 	"encoding/json"
-	"io"
 	"net/http"
+
+	"github.com/paweenwatkwanja/transaction-broadcasting/models"
 )
 
-func PostRequest(url string, request any) ([]byte, error) {
+func PostRequest(url string, request any) (*models.BroadcastResponse, error) {
 	contentType := "application/json"
-	requestBody, err := json.Marshal(request)
+	requestBody := &bytes.Buffer{}
+	err := json.NewEncoder(requestBody).Encode(request)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := http.Post(url, contentType, bytes.NewBuffer(requestBody))
+	resp, err := http.Post(url, contentType, requestBody)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	responseBody, err := io.ReadAll(resp.Body)
+	response := &models.BroadcastResponse{}
+	err = json.NewDecoder(resp.Body).Decode(&response)
 	if err != nil {
 		return nil, err
 	}
 
-	return responseBody, nil
+	return response, nil
 }
 
-func GetRequest(url string) ([]byte, error) {
+func GetRequest(url string) (*models.BroadcastResponse, error) {
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	responseBody, err := io.ReadAll(resp.Body)
+	response := &models.BroadcastResponse{}
+	err = json.NewDecoder(resp.Body).Decode(&response)
 	if err != nil {
 		return nil, err
 	}
 
-	return responseBody, nil
+	return response, nil
 }

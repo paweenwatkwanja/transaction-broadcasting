@@ -31,11 +31,11 @@ func (b *BroadcastService) BroadcastTransaction(url string, request models.Broad
 		return txHash, err
 	}
 
-	responseBody, err := external.PostRequest(url, request)
+	response, err := external.PostRequest(url, request)
 	if err != nil {
 		return txHash, err
 	}
-	txHash = string(responseBody)
+	txHash = response.TxHash
 
 	return txHash, nil
 }
@@ -43,11 +43,11 @@ func (b *BroadcastService) BroadcastTransaction(url string, request models.Broad
 func (b *BroadcastService) MonitorTransaction(url string) (string, error) {
 	txStatus := ""
 
-	responseBody, err := external.GetRequest(url)
+	response, err := external.GetRequest(url)
 	if err != nil {
 		return txStatus, err
 	}
-	txStatus = string(responseBody)
+	txStatus = response.TxStatus
 
 	return txStatus, nil
 }
@@ -72,18 +72,18 @@ func retryMonitorTransaction(url string, status string) error {
 	duration := 5
 
 	for i := range retryAttempt {
-		responseBody, err := external.GetRequest(url)
+		response, err := external.GetRequest(url)
 		if err != nil {
 			return err
 		}
-		txStatus := string(responseBody)
+		txStatus := response.TxStatus
 
 		if txStatus == status {
 			break
 		} else if txStatus == failedStatus {
 			return errors.New("broadcast failed")
 		} else if txStatus == dneStatus {
-			return errors.New("status not exist")
+			return errors.New("item not found")
 		}
 
 		if i < retryAttempt {
