@@ -87,7 +87,7 @@ func retryMonitorTransaction(url string, status string) error {
 		}
 
 		if i < retryAttempt {
-			fmt.Printf("attempt %v failed. Retrying in %v seconds", i, duration)
+			fmt.Printf("attempt %v failed. Retrying in %v seconds\n", i+1, duration)
 			time.Sleep(time.Duration(duration) * time.Second)
 		}
 	}
