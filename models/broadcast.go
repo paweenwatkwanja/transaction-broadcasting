@@ -1,9 +1,9 @@
 package models
 
 type BroadcastRequest struct {
-	Symbol    string `json:"symbol" validate:"required"`
-	Price     uint64 `json:"price" validate:"required"`
-	Timestamp uint64 `json:"timestamp" validate:"required"`
+	Symbol    string `json:"symbol"`
+	Price     uint64 `json:"price"`
+	Timestamp uint64 `json:"timestamp"`
 }
 
 type BroadcastResponse struct {

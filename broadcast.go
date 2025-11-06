@@ -55,41 +55,42 @@ func (b *BroadcastService) MonitorTransaction(url string) (string, error) {
 	return txStatus, nil
 }
 
-func (b *BroadcastService) HandleStatus(url string, txStatus string) error {
+func (b *BroadcastService) HandleStatus(url string, txStatus string) (string, error) {
 	switch txStatus {
 	case confirmedStatus:
-		return nil
+		return "", nil
 	case failedStatus:
-		return errors.New("broadcast failed")
+		return txStatus, errors.New("broadcast failed")
 	case pendingStatus:
 		retryMonitorRequest := newRetryMonitorRequest(url, txStatus, b.retryRequest)
 		return b.retryMonitorTransaction(retryMonitorRequest)
 	case dneStatus:
-		return errors.New("item not exist")
+		return txStatus, errors.New("item not exist")
 	default:
-		return errors.New("status not exist")
+		return txStatus, errors.New("status not exist")
 	}
 }
 
-func (b *BroadcastService) retryMonitorTransaction(retryMonitorRequest *models.RetryMonitorRequest) error {
+func (b *BroadcastService) retryMonitorTransaction(retryMonitorRequest *models.RetryMonitorRequest) (string, error) {
 	retryRequest := &retryMonitorRequest.RetryRequest
 	retryAttempt := getRetryAttemptForBroadcast(retryRequest.RetryAttempt)
 	retryDuration := getRetryDurationForBroadcast(retryRequest.RetryDuration)
 
+	var txStatus string
 	for i := 0; i < retryAttempt; i++ {
 		response, err := b.externalService.Get(retryMonitorRequest.Url)
 		if err != nil {
-			return err
+			return "", err
 		}
-		txStatus := response.TxStatus
+		txStatus = response.TxStatus
 
 		switch txStatus {
 		case confirmedStatus:
-			return nil
+			return txStatus, nil
 		case failedStatus:
-			return errors.New("broadcast failed")
+			return txStatus, errors.New("broadcast failed")
 		case dneStatus:
-			return errors.New("item not found")
+			return txStatus, errors.New("item not found")
 		}
 
 		if i < retryAttempt-1 {
@@ -100,7 +101,7 @@ func (b *BroadcastService) retryMonitorTransaction(retryMonitorRequest *models.R
 		}
 	}
 
-	return errors.New("could not get confirmed status")
+	return txStatus, errors.New("status is still pending")
 }
 
 func (b *BroadcastService) WithRetryRequest(retryRequest *models.RetryRequest) *BroadcastService {
