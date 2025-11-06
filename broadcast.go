@@ -23,7 +23,9 @@ const (
 )
 
 func NewBroadcastService() *BroadcastService {
-	return &BroadcastService{}
+	return &BroadcastService{
+		retryRequest: &models.RetryRequest{},
+	}
 }
 
 func (b *BroadcastService) BroadcastTransaction(url string, request models.BroadcastRequest) (string, error) {
@@ -113,5 +115,6 @@ func (b *BroadcastService) WithRetryDuration(retryDuration time.Duration) {
 }
 
 func (b *BroadcastService) WithCustomizedHTTPRequest(customHTTPRequest *models.CustomHTTPRequest) {
+	b.externalService.CustomHTTPRequest = &models.CustomHTTPRequest{}
 	b.externalService.CustomHTTPRequest = customHTTPRequest
 }
