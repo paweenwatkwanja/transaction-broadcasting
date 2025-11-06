@@ -13,7 +13,6 @@ type ExternalService struct {
 }
 
 func (x *ExternalService) Post(url string, request *models.BroadcastRequest) (*models.BroadcastResponse, error) {
-	fmt.Println("Post method is called")
 	client := initClient(x.CustomHTTPRequest)
 	defer client.Close()
 
@@ -25,13 +24,11 @@ func (x *ExternalService) Post(url string, request *models.BroadcastRequest) (*m
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("resp from Post is %v\n", resp.Result())
-	fmt.Printf("resp.Result() from Post is %v\n", resp.Result())
+
 	return resp.Result().(*models.BroadcastResponse), nil
 }
 
 func (x *ExternalService) Get(url string) (*models.BroadcastResponse, error) {
-	fmt.Println("Get method is called")
 	client := initClient(x.CustomHTTPRequest)
 	defer client.Close()
 
@@ -42,12 +39,11 @@ func (x *ExternalService) Get(url string) (*models.BroadcastResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("result from Get is %v\n", resp.Result())
+
 	return resp.Result().(*models.BroadcastResponse), nil
 }
 
 func initClient(request *models.CustomHTTPRequest) *resty.Client {
-	fmt.Println("Init Client")
 	client := resty.New()
 	if request == nil {
 		return client
@@ -63,14 +59,14 @@ func initClient(request *models.CustomHTTPRequest) *resty.Client {
 	if request.RetryDuration != 0 {
 		test := &request.RetryDuration
 		fmt.Printf("RetryDuration is %v\n", *test)
-		client.SetRetryWaitTime(request.RetryDuration * time.Second).
-			SetRetryMaxWaitTime(request.RetryDuration * time.Second)
+		client.SetRetryWaitTime(time.Duration(request.RetryDuration) * time.Second).
+			SetRetryMaxWaitTime(time.Duration(request.RetryDuration) * time.Second)
 	}
 
 	if request.Timeout != 0 {
 		test := &request.Timeout
 		fmt.Printf("Timeout is %v\n", *test)
-		client.SetTimeout(request.Timeout)
+		client.SetTimeout(time.Duration(request.RetryDuration) * time.Second)
 	}
 
 	return client

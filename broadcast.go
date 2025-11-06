@@ -87,7 +87,6 @@ func (b *BroadcastService) HandleStatus(url string, txStatus string) error {
 }
 
 func (b *BroadcastService) retryMonitorTransaction(retryMonitorRequest *models.RetryMonitorRequest) error {
-	fmt.Println("retrying")
 	retryRequest := &retryMonitorRequest.RetryRequest
 
 	var retryAttempt int = 3
@@ -100,26 +99,23 @@ func (b *BroadcastService) retryMonitorTransaction(retryMonitorRequest *models.R
 	}
 
 	for i := range retryAttempt {
-		fmt.Println(i)
-		fmt.Println(retryAttempt)
-		fmt.Println(retryDuration)
 		response, err := b.externalService.Get(retryMonitorRequest.Url)
-		fmt.Println(response)
 		if err != nil {
 			return err
 		}
 		txStatus := response.TxStatus
 
-		if txStatus == confirmedStatus {
-			break
-		} else if txStatus == failedStatus {
+		switch txStatus {
+		case confirmedStatus:
+			return nil
+		case failedStatus:
 			return errors.New("broadcast failed")
-		} else if txStatus == dneStatus {
+		case dneStatus:
 			return errors.New("item not found")
 		}
 
 		if i < retryAttempt {
-			fmt.Printf("Attempt %v failed. Retrying in %v seconds\n", i+1, retryDuration.Seconds())
+			fmt.Printf("Attempt %v failed. Retrying in %v seconds\n", i+1, retryDuration)
 			time.Sleep(retryDuration * time.Second)
 		}
 	}
@@ -129,13 +125,15 @@ func (b *BroadcastService) retryMonitorTransaction(retryMonitorRequest *models.R
 
 func (b *BroadcastService) WithRetryRequest(retryRequest *models.RetryRequest) *BroadcastService {
 	b.retryRequest = retryRequest
-	fmt.Printf("retryRequest : %v", b.retryRequest)
+	test := *b.retryRequest
+	fmt.Printf("retryRequest : %v", test)
 	return b
 }
 
 func (b *BroadcastService) WithCustomHTTPRequest(customHTTPRequest *models.CustomHTTPRequest) *BroadcastService {
 	b.externalService.CustomHTTPRequest = &models.CustomHTTPRequest{}
 	b.externalService.CustomHTTPRequest = customHTTPRequest
-	fmt.Printf("CustomHTTPRequest : %v", b.externalService.CustomHTTPRequest)
+	test := *b.externalService.CustomHTTPRequest
+	fmt.Printf("CustomHTTPRequest : %v", test)
 	return b
 }
