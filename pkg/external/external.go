@@ -20,12 +20,13 @@ func (x *ExternalService) Post(url string, request *models.BroadcastRequest) (*m
 	resp, err := client.R().
 		SetBody(request).
 		SetResult(&models.BroadcastResponse{}).
-		Get(url)
+		Post(url)
 
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("result from Post is %v\n", resp.Result())
+	fmt.Printf("resp from Post is %v\n", resp.Result())
+	fmt.Printf("resp.Result() from Post is %v\n", resp.Result())
 	return resp.Result().(*models.BroadcastResponse), nil
 }
 
