@@ -100,7 +100,11 @@ func (b *BroadcastService) retryMonitorTransaction(retryMonitorRequest *models.R
 	}
 
 	for i := range retryAttempt {
+		fmt.Println(i)
+		fmt.Println(retryAttempt)
+		fmt.Println(retryDuration)
 		response, err := b.externalService.Get(retryMonitorRequest.Url)
+		fmt.Println(response)
 		if err != nil {
 			return err
 		}
