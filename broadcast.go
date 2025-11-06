@@ -114,7 +114,7 @@ func (b *BroadcastService) WithRetryDuration(retryDuration time.Duration) {
 	b.retryRequest.RetryDuration = retryDuration
 }
 
-func (b *BroadcastService) WithCustomizedHTTPRequest(customHTTPRequest *models.CustomHTTPRequest) {
+func (b *BroadcastService) WithCustomHTTPRequest(customHTTPRequest *models.CustomHTTPRequest) {
 	b.externalService.CustomHTTPRequest = &models.CustomHTTPRequest{}
 	b.externalService.CustomHTTPRequest = customHTTPRequest
 }

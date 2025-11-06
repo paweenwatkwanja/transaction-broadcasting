@@ -35,7 +35,7 @@ func (x *ExternalService) PostRequest(url string, request any) (*models.Broadcas
 }
 
 func (x *ExternalService) GetRequest(url string) (*models.BroadcastResponse, error) {
-	resp, err := SendWithCustomRequest(PostMethod, x.CustomHTTPRequest, url, nil)
+	resp, err := SendWithCustomRequest(GetMethod, x.CustomHTTPRequest, url, nil)
 	if err != nil {
 		return nil, err
 	}
