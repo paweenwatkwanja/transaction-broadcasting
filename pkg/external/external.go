@@ -4,19 +4,22 @@ import (
 	"bytes"
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/paweenwatkwanja/transaction-broadcasting/models"
 )
 
-func PostRequest(url string, request any) (*models.BroadcastResponse, error) {
-	contentType := "application/json"
-	requestBody := &bytes.Buffer{}
-	err := json.NewEncoder(requestBody).Encode(request)
-	if err != nil {
-		return nil, err
-	}
+const (
+	PostMethod = "POST"
+	GetMethod  = "GET"
+)
 
-	resp, err := http.Post(url, contentType, requestBody)
+type ExternalService struct {
+	CustomHTTPRequest *models.CustomHTTPRequest
+}
+
+func (x *ExternalService) PostRequest(url string, request any) (*models.BroadcastResponse, error) {
+	resp, err := SendWithCustomRequest(PostMethod, x.CustomHTTPRequest, url, request)
 	if err != nil {
 		return nil, err
 	}
@@ -31,8 +34,8 @@ func PostRequest(url string, request any) (*models.BroadcastResponse, error) {
 	return response, nil
 }
 
-func GetRequest(url string) (*models.BroadcastResponse, error) {
-	resp, err := http.Get(url)
+func (x *ExternalService) GetRequest(url string) (*models.BroadcastResponse, error) {
+	resp, err := SendWithCustomRequest(PostMethod, x.CustomHTTPRequest, url, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -45,4 +48,33 @@ func GetRequest(url string) (*models.BroadcastResponse, error) {
 	}
 
 	return response, nil
+}
+
+func SendWithCustomRequest(method string, customRequest *models.CustomHTTPRequest, url string, requestBody any) (*http.Response, error) {
+	var err error
+
+	var req *http.Request
+	req, err = http.NewRequestWithContext(customRequest.Context, method, url, nil)
+	if method == PostMethod && requestBody != nil {
+		jsonPayload := &bytes.Buffer{}
+		err = json.NewEncoder(jsonPayload).Encode(requestBody)
+		if err != nil {
+			return nil, err
+		}
+		req, err = http.NewRequestWithContext(customRequest.Context, method, url, jsonPayload)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	client := &http.Client{}
+	timeout := customRequest.Timeout * time.Second
+	client.Timeout = timeout
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
 }

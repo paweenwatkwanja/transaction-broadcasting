@@ -11,8 +11,8 @@ import (
 )
 
 type BroadcastService struct {
-	retryRequest          models.RetryRequest
-	customizedHTTPRequest models.CustomizedHTTPRequest
+	retryRequest    *models.RetryRequest
+	externalService external.ExternalService
 }
 
 const (
@@ -23,9 +23,7 @@ const (
 )
 
 func NewBroadcastService() *BroadcastService {
-	return &BroadcastService{
-		retryRequest: models.RetryRequest{},
-	}
+	return &BroadcastService{}
 }
 
 func (b *BroadcastService) BroadcastTransaction(url string, request models.BroadcastRequest) (string, error) {
@@ -36,7 +34,7 @@ func (b *BroadcastService) BroadcastTransaction(url string, request models.Broad
 		return txHash, err
 	}
 
-	response, err := external.PostRequest(url, request)
+	response, err := b.externalService.PostRequest(url, request)
 	if err != nil {
 		return txHash, err
 	}
@@ -48,7 +46,7 @@ func (b *BroadcastService) BroadcastTransaction(url string, request models.Broad
 func (b *BroadcastService) MonitorTransaction(url string) (string, error) {
 	txStatus := ""
 
-	response, err := external.GetRequest(url)
+	response, err := b.externalService.GetRequest(url)
 	if err != nil {
 		return txStatus, err
 	}
@@ -64,7 +62,7 @@ func (b *BroadcastService) HandleStatus(url string, txStatus string) error {
 	case failedStatus:
 		return errors.New("broadcast failed")
 	case pendingStatus:
-		return retryMonitorTransaction(url, confirmedStatus, b.retryRequest)
+		return b.retryMonitorTransaction(url, confirmedStatus, b.retryRequest)
 	case dneStatus:
 		return errors.New("item not exist")
 	default:
@@ -72,18 +70,18 @@ func (b *BroadcastService) HandleStatus(url string, txStatus string) error {
 	}
 }
 
-func retryMonitorTransaction(url string, status string, retryRequest models.RetryRequest) error {
+func (b *BroadcastService) retryMonitorTransaction(url string, status string, retryRequest *models.RetryRequest) error {
 	var retryAttempt uint = 3
 	if retryRequest.RetryAttempt != 0 {
 		retryAttempt = retryRequest.RetryAttempt
 	}
-	var retryDuration uint = 5
+	var retryDuration time.Duration = 5
 	if retryRequest.RetryAttempt != 0 {
 		retryAttempt = retryRequest.RetryAttempt
 	}
 
 	for i := range retryAttempt {
-		response, err := external.GetRequest(url)
+		response, err := b.externalService.GetRequest(url)
 		if err != nil {
 			return err
 		}
@@ -99,7 +97,7 @@ func retryMonitorTransaction(url string, status string, retryRequest models.Retr
 
 		if i < retryAttempt {
 			fmt.Printf("Attempt %v failed. Retrying in %v seconds\n", i+1, retryDuration)
-			time.Sleep(time.Duration(retryDuration) * time.Second)
+			time.Sleep(retryDuration * time.Second)
 		}
 	}
 
@@ -110,11 +108,10 @@ func (b *BroadcastService) WithRetryAttempt(retryAttempt uint) {
 	b.retryRequest.RetryAttempt = retryAttempt
 }
 
-func (b *BroadcastService) WithRetryDuration(retryDuration uint) {
+func (b *BroadcastService) WithRetryDuration(retryDuration time.Duration) {
 	b.retryRequest.RetryDuration = retryDuration
 }
 
-func (b *BroadcastService) WithCustomizedHTTPRequest(customizedHTTPRequest models.CustomizedHTTPRequest) {
-	b.customizedHTTPRequest = models.CustomizedHTTPRequest{}
-	b.customizedHTTPRequest = customizedHTTPRequest
+func (b *BroadcastService) WithCustomizedHTTPRequest(customHTTPRequest *models.CustomHTTPRequest) {
+	b.externalService.CustomHTTPRequest = customHTTPRequest
 }
