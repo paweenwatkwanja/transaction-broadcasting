@@ -10,7 +10,10 @@ import (
 	"github.com/paweenwatkwanja/transaction-broadcasting/utils"
 )
 
-type BroadcastService struct{}
+type BroadcastService struct {
+	retryRequest          models.RetryRequest
+	customizedHTTPRequest models.CustomizedHTTPRequest
+}
 
 const (
 	confirmedStatus = "COMFIRMED"
@@ -20,7 +23,9 @@ const (
 )
 
 func NewBroadcastService() *BroadcastService {
-	return &BroadcastService{}
+	return &BroadcastService{
+		retryRequest: models.RetryRequest{},
+	}
 }
 
 func (b *BroadcastService) BroadcastTransaction(url string, request models.BroadcastRequest) (string, error) {
@@ -59,17 +64,23 @@ func (b *BroadcastService) HandleStatus(url string, txStatus string) error {
 	case failedStatus:
 		return errors.New("broadcast failed")
 	case pendingStatus:
-		return retryMonitorTransaction(url, confirmedStatus)
+		return retryMonitorTransaction(url, confirmedStatus, b.retryRequest)
 	case dneStatus:
-		return errors.New("item not found")
+		return errors.New("item not exist")
 	default:
 		return errors.New("status not exist")
 	}
 }
 
-func retryMonitorTransaction(url string, status string) error {
-	retryAttempt := 3
-	duration := 5
+func retryMonitorTransaction(url string, status string, retryRequest models.RetryRequest) error {
+	var retryAttempt uint = 3
+	if retryRequest.RetryAttempt != 0 {
+		retryAttempt = retryRequest.RetryAttempt
+	}
+	var retryDuration uint = 5
+	if retryRequest.RetryAttempt != 0 {
+		retryAttempt = retryRequest.RetryAttempt
+	}
 
 	for i := range retryAttempt {
 		response, err := external.GetRequest(url)
@@ -87,10 +98,23 @@ func retryMonitorTransaction(url string, status string) error {
 		}
 
 		if i < retryAttempt {
-			fmt.Printf("attempt %v failed. Retrying in %v seconds\n", i+1, duration)
-			time.Sleep(time.Duration(duration) * time.Second)
+			fmt.Printf("Attempt %v failed. Retrying in %v seconds\n", i+1, retryDuration)
+			time.Sleep(time.Duration(retryDuration) * time.Second)
 		}
 	}
 
 	return errors.New("could not get confirmed status")
+}
+
+func (b *BroadcastService) WithRetryAttempt(retryAttempt uint) {
+	b.retryRequest.RetryAttempt = retryAttempt
+}
+
+func (b *BroadcastService) WithRetryDuration(retryDuration uint) {
+	b.retryRequest.RetryDuration = retryDuration
+}
+
+func (b *BroadcastService) WithCustomizedHTTPRequest(customizedHTTPRequest models.CustomizedHTTPRequest) {
+	b.customizedHTTPRequest = models.CustomizedHTTPRequest{}
+	b.customizedHTTPRequest = customizedHTTPRequest
 }
