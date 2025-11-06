@@ -25,7 +25,7 @@ func (x *ExternalService) Post(url string, request *models.BroadcastRequest) (*m
 	if err != nil {
 		return nil, err
 	}
-
+	fmt.Printf("result from Post is %v\n", resp.Result())
 	return resp.Result().(*models.BroadcastResponse), nil
 }
 
@@ -41,7 +41,7 @@ func (x *ExternalService) Get(url string) (*models.BroadcastResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	fmt.Printf("result from Get is %v\n", resp.Result())
 	return resp.Result().(*models.BroadcastResponse), nil
 }
 

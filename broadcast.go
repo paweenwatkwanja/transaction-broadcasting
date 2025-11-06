@@ -43,7 +43,7 @@ func (b *BroadcastService) BroadcastTransaction(url string, request *models.Broa
 	}
 	fmt.Println("got response from Post")
 	txHash = response.TxHash
-	fmt.Printf("txHash is %v", response.TxHash)
+	fmt.Printf("txHash is %v\n", response.TxHash)
 	return txHash, nil
 }
 
@@ -56,7 +56,7 @@ func (b *BroadcastService) MonitorTransaction(url string) (string, error) {
 	}
 	fmt.Println("got response from Get")
 	txStatus = response.TxStatus
-	fmt.Printf("txStatus is %v", txStatus)
+	fmt.Printf("txStatus is %v\n", txStatus)
 	return txStatus, nil
 }
 
