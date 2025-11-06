@@ -110,7 +110,7 @@ func (b *BroadcastService) retryMonitorTransaction(retryMonitorRequest *models.R
 		}
 		txStatus := response.TxStatus
 
-		if txStatus == retryMonitorRequest.Status {
+		if txStatus == confirmedStatus {
 			break
 		} else if txStatus == failedStatus {
 			return errors.New("broadcast failed")
