@@ -47,25 +47,28 @@ func (x *ExternalService) Get(url string) (*models.BroadcastResponse, error) {
 
 func initClient(request *models.CustomHTTPRequest) *resty.Client {
 	fmt.Println("Init Client")
-	fmt.Println(request)
 	client := resty.New()
 	if request == nil {
 		return client
 	}
+	fmt.Println(*request)
 
 	if request.RetryAttempt != 0 {
-		fmt.Printf("RetryAttempt is %v", request.RetryAttempt)
+		test := &request.RetryAttempt
+		fmt.Printf("RetryAttempt is %v\n", *test)
 		client.SetRetryCount(request.RetryAttempt)
 	}
 
 	if request.RetryDuration != 0 {
-		fmt.Printf("RetryDuration is %v", request.RetryDuration)
+		test := &request.RetryDuration
+		fmt.Printf("RetryDuration is %v\n", *test)
 		client.SetRetryWaitTime(request.RetryDuration * time.Second).
 			SetRetryMaxWaitTime(request.RetryDuration * time.Second)
 	}
 
 	if request.Timeout != 0 {
-		fmt.Printf("Timeout is %v", request.Timeout)
+		test := &request.Timeout
+		fmt.Printf("Timeout is %v\n", *test)
 		client.SetTimeout(request.Timeout)
 	}
 
