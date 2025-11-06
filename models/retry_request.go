@@ -1,10 +1,8 @@
 package models
 
-import "time"
-
 type RetryRequest struct {
 	RetryAttempt  int
-	RetryDuration time.Duration
+	RetryDuration int
 }
 
 type RetryMonitorRequest struct {

@@ -16,89 +16,67 @@ type BroadcastService struct {
 }
 
 const (
-	confirmedStatus = "COMFIRMED"
+	confirmedStatus = "CONFIRMED"
 	failedStatus    = "FAILED"
 	pendingStatus   = "PENDING"
 	dneStatus       = "DNE"
 )
 
 func NewBroadcastService() *BroadcastService {
-	return &BroadcastService{
-		retryRequest: &models.RetryRequest{},
-	}
+	return &BroadcastService{}
 }
 
 func (b *BroadcastService) BroadcastTransaction(url string, request *models.BroadcastRequest) (string, error) {
 	txHash := ""
-	fmt.Println("broadcasting")
+
 	err := utils.ValidateBroadcastRequest(request)
 	if err != nil {
 		return txHash, err
 	}
-	fmt.Println("request validated")
 
 	response, err := b.externalService.Post(url, request)
 	if err != nil {
 		return txHash, err
 	}
-	fmt.Println("got response from Post")
 	txHash = response.TxHash
-	fmt.Printf("txHash is %v\n", response.TxHash)
+
 	return txHash, nil
 }
 
 func (b *BroadcastService) MonitorTransaction(url string) (string, error) {
 	txStatus := ""
-	fmt.Println("monitoring")
+
 	response, err := b.externalService.Get(url)
 	if err != nil {
 		return txStatus, err
 	}
-	fmt.Println("got response from Get")
 	txStatus = response.TxStatus
-	fmt.Printf("txStatus is %v\n", txStatus)
+
 	return txStatus, nil
 }
 
 func (b *BroadcastService) HandleStatus(url string, txStatus string) error {
-	fmt.Println("handling")
 	switch txStatus {
 	case confirmedStatus:
-		fmt.Println("case confirmed")
 		return nil
 	case failedStatus:
-		fmt.Println("case failed")
 		return errors.New("broadcast failed")
 	case pendingStatus:
-		fmt.Println("case pedning")
-		retryMonitorRequest := &models.RetryMonitorRequest{
-			Url:          url,
-			Status:       txStatus,
-			RetryRequest: *b.retryRequest,
-		}
+		retryMonitorRequest := newRetryMonitorRequest(url, txStatus, b.retryRequest)
 		return b.retryMonitorTransaction(retryMonitorRequest)
 	case dneStatus:
-		fmt.Println("case dns")
 		return errors.New("item not exist")
 	default:
-		fmt.Println("status not exist")
 		return errors.New("status not exist")
 	}
 }
 
 func (b *BroadcastService) retryMonitorTransaction(retryMonitorRequest *models.RetryMonitorRequest) error {
 	retryRequest := &retryMonitorRequest.RetryRequest
+	retryAttempt := getRetryAttemptForBroadcast(retryRequest.RetryAttempt)
+	retryDuration := getRetryDurationForBroadcast(retryRequest.RetryDuration)
 
-	var retryAttempt int = 3
-	if retryRequest.RetryAttempt != 0 {
-		retryAttempt = retryRequest.RetryAttempt
-	}
-	var retryDuration time.Duration = 5
-	if retryRequest.RetryDuration != 0 {
-		retryDuration = retryRequest.RetryDuration
-	}
-
-	for i := range retryAttempt {
+	for i := 0; i < retryAttempt; i++ {
 		response, err := b.externalService.Get(retryMonitorRequest.Url)
 		if err != nil {
 			return err
@@ -114,9 +92,11 @@ func (b *BroadcastService) retryMonitorTransaction(retryMonitorRequest *models.R
 			return errors.New("item not found")
 		}
 
-		if i < retryAttempt {
-			fmt.Printf("Attempt %v failed. Retrying in %v seconds\n", i+1, retryDuration)
-			time.Sleep(retryDuration * time.Second)
+		if i < retryAttempt-1 {
+			fmt.Printf("Attempt %v. Status is still PENDING. Retrying in %v seconds\n", i+1, retryDuration)
+			time.Sleep(time.Duration(retryDuration) * time.Second)
+		} else {
+			fmt.Printf("Attempt %v. Status is still PENDING. No more retries left.\n", i+1)
 		}
 	}
 
@@ -125,15 +105,38 @@ func (b *BroadcastService) retryMonitorTransaction(retryMonitorRequest *models.R
 
 func (b *BroadcastService) WithRetryRequest(retryRequest *models.RetryRequest) *BroadcastService {
 	b.retryRequest = retryRequest
-	test := *b.retryRequest
-	fmt.Printf("retryRequest : %v", test)
 	return b
 }
 
 func (b *BroadcastService) WithCustomHTTPRequest(customHTTPRequest *models.CustomHTTPRequest) *BroadcastService {
-	b.externalService.CustomHTTPRequest = &models.CustomHTTPRequest{}
 	b.externalService.CustomHTTPRequest = customHTTPRequest
-	test := *b.externalService.CustomHTTPRequest
-	fmt.Printf("CustomHTTPRequest : %v", test)
 	return b
+}
+
+func newRetryMonitorRequest(url string, txStatus string, retryRequest *models.RetryRequest) *models.RetryMonitorRequest {
+	retryMonitorRequest := &models.RetryMonitorRequest{
+		Url:    url,
+		Status: txStatus,
+	}
+	if retryRequest != nil {
+		retryMonitorRequest.RetryRequest = *retryRequest
+	}
+
+	return retryMonitorRequest
+}
+
+func getRetryAttemptForBroadcast(newRetryAttempt int) int {
+	var retryAttempt int = 3
+	if newRetryAttempt != 0 {
+		retryAttempt = newRetryAttempt
+	}
+	return retryAttempt
+}
+
+func getRetryDurationForBroadcast(newRetryDuration int) int {
+	var retryDuration int = 5
+	if newRetryDuration != 0 {
+		retryDuration = newRetryDuration
+	}
+	return retryDuration
 }

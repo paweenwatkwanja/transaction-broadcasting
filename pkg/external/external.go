@@ -1,7 +1,6 @@
 package external
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/paweenwatkwanja/transaction-broadcasting/models"
@@ -48,24 +47,17 @@ func initClient(request *models.CustomHTTPRequest) *resty.Client {
 	if request == nil {
 		return client
 	}
-	fmt.Println(*request)
 
 	if request.RetryAttempt != 0 {
-		test := &request.RetryAttempt
-		fmt.Printf("RetryAttempt is %v\n", *test)
 		client.SetRetryCount(request.RetryAttempt)
 	}
 
 	if request.RetryDuration != 0 {
-		test := &request.RetryDuration
-		fmt.Printf("RetryDuration is %v\n", *test)
 		client.SetRetryWaitTime(time.Duration(request.RetryDuration) * time.Second).
 			SetRetryMaxWaitTime(time.Duration(request.RetryDuration) * time.Second)
 	}
 
 	if request.Timeout != 0 {
-		test := &request.Timeout
-		fmt.Printf("Timeout is %v\n", *test)
 		client.SetTimeout(time.Duration(request.RetryDuration) * time.Second)
 	}
 
