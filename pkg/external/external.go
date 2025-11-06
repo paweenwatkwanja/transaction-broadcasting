@@ -1,80 +1,73 @@
 package external
 
 import (
-	"bytes"
-	"encoding/json"
-	"net/http"
+	"fmt"
 	"time"
 
 	"github.com/paweenwatkwanja/transaction-broadcasting/models"
-)
-
-const (
-	PostMethod = "POST"
-	GetMethod  = "GET"
+	"resty.dev/v3"
 )
 
 type ExternalService struct {
 	CustomHTTPRequest *models.CustomHTTPRequest
 }
 
-func (x *ExternalService) PostRequest(url string, request any) (*models.BroadcastResponse, error) {
-	resp, err := SendWithCustomRequest(PostMethod, x.CustomHTTPRequest, url, request)
+func (x *ExternalService) Post(url string, request *models.BroadcastRequest) (*models.BroadcastResponse, error) {
+	fmt.Println("Post method is called")
+	client := initClient(x.CustomHTTPRequest)
+	defer client.Close()
+
+	resp, err := client.R().
+		SetBody(request).
+		SetResult(&models.BroadcastResponse{}).
+		Get(url)
+
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 
-	response := &models.BroadcastResponse{}
-	err = json.NewDecoder(resp.Body).Decode(&response)
-	if err != nil {
-		return nil, err
-	}
-
-	return response, nil
+	return resp.Result().(*models.BroadcastResponse), nil
 }
 
-func (x *ExternalService) GetRequest(url string) (*models.BroadcastResponse, error) {
-	resp, err := SendWithCustomRequest(GetMethod, x.CustomHTTPRequest, url, nil)
+func (x *ExternalService) Get(url string) (*models.BroadcastResponse, error) {
+	fmt.Println("Get method is called")
+	client := initClient(x.CustomHTTPRequest)
+	defer client.Close()
+
+	resp, err := client.R().
+		SetResult(&models.BroadcastResponse{}).
+		Get(url)
+
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 
-	response := &models.BroadcastResponse{}
-	err = json.NewDecoder(resp.Body).Decode(&response)
-	if err != nil {
-		return nil, err
-	}
-
-	return response, nil
+	return resp.Result().(*models.BroadcastResponse), nil
 }
 
-func SendWithCustomRequest(method string, customRequest *models.CustomHTTPRequest, url string, requestBody any) (*http.Response, error) {
-	var err error
-
-	var req *http.Request
-	req, err = http.NewRequestWithContext(customRequest.Context, method, url, nil)
-	if method == PostMethod && requestBody != nil {
-		jsonPayload := &bytes.Buffer{}
-		err = json.NewEncoder(jsonPayload).Encode(requestBody)
-		if err != nil {
-			return nil, err
-		}
-		req, err = http.NewRequestWithContext(customRequest.Context, method, url, jsonPayload)
-	}
-	if err != nil {
-		return nil, err
+func initClient(request *models.CustomHTTPRequest) *resty.Client {
+	fmt.Println("Init Client")
+	fmt.Println(request)
+	client := resty.New()
+	if request == nil {
+		return client
 	}
 
-	client := &http.Client{}
-	timeout := customRequest.Timeout * time.Second
-	client.Timeout = timeout
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
+	if request.RetryAttempt != 0 {
+		fmt.Printf("RetryAttempt is %v", request.RetryAttempt)
+		client.SetRetryCount(request.RetryAttempt)
 	}
 
-	return resp, nil
+	if request.RetryDuration != 0 {
+		fmt.Printf("RetryDuration is %v", request.RetryDuration)
+		client.SetRetryWaitTime(request.RetryDuration * time.Second).
+			SetRetryMaxWaitTime(request.RetryDuration * time.Second)
+	}
+
+	if request.Timeout != 0 {
+		fmt.Printf("Timeout is %v", request.Timeout)
+		client.SetTimeout(request.Timeout)
+	}
+
+	return client
 }

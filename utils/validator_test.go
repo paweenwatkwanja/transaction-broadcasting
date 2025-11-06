@@ -11,7 +11,7 @@ import (
 
 type testCase struct {
 	testCaseName string
-	request      models.BroadcastRequest
+	request      *models.BroadcastRequest
 	err          error
 }
 
@@ -19,7 +19,7 @@ func TestBroadcastRequest(t *testing.T) {
 	testCases := []testCase{
 		{
 			testCaseName: "case request not nil",
-			request: models.BroadcastRequest{
+			request: &models.BroadcastRequest{
 				Symbol:    "BTC",
 				Price:     100000,
 				Timestamp: 1678912345,
@@ -29,6 +29,33 @@ func TestBroadcastRequest(t *testing.T) {
 		{
 			testCaseName: "case request nil",
 			err:          errors.New("request is required"),
+		},
+		{
+			testCaseName: "case symbol is empty",
+			request: &models.BroadcastRequest{
+				Symbol:    "",
+				Price:     100000,
+				Timestamp: 1678912345,
+			},
+			err: errors.New("symbol is required"),
+		},
+		{
+			testCaseName: "case price is zero",
+			request: &models.BroadcastRequest{
+				Symbol:    "BTC",
+				Price:     100000,
+				Timestamp: 1678912345,
+			},
+			err: errors.New("price should be greater than 0"),
+		},
+		{
+			testCaseName: "case timestamp is zero",
+			request: &models.BroadcastRequest{
+				Symbol:    "BTC",
+				Price:     100000,
+				Timestamp: 0,
+			},
+			err: errors.New("timestamp should be greater than 0"),
 		},
 	}
 

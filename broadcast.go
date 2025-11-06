@@ -28,68 +28,85 @@ func NewBroadcastService() *BroadcastService {
 	}
 }
 
-func (b *BroadcastService) BroadcastTransaction(url string, request models.BroadcastRequest) (string, error) {
+func (b *BroadcastService) BroadcastTransaction(url string, request *models.BroadcastRequest) (string, error) {
 	txHash := ""
-
+	fmt.Println("broadcasting")
 	err := utils.ValidateBroadcastRequest(request)
 	if err != nil {
 		return txHash, err
 	}
+	fmt.Println("request validated")
 
-	response, err := b.externalService.PostRequest(url, request)
+	response, err := b.externalService.Post(url, request)
 	if err != nil {
 		return txHash, err
 	}
+	fmt.Println("got response from Post")
 	txHash = response.TxHash
-
+	fmt.Printf("txHash is %v", response.TxHash)
 	return txHash, nil
 }
 
 func (b *BroadcastService) MonitorTransaction(url string) (string, error) {
 	txStatus := ""
-
-	response, err := b.externalService.GetRequest(url)
+	fmt.Println("monitoring")
+	response, err := b.externalService.Get(url)
 	if err != nil {
 		return txStatus, err
 	}
+	fmt.Println("got response from Get")
 	txStatus = response.TxStatus
-
+	fmt.Printf("txStatus is %v", txStatus)
 	return txStatus, nil
 }
 
 func (b *BroadcastService) HandleStatus(url string, txStatus string) error {
+	fmt.Println("handling")
 	switch txStatus {
 	case confirmedStatus:
+		fmt.Println("case confirmed")
 		return nil
 	case failedStatus:
+		fmt.Println("case failed")
 		return errors.New("broadcast failed")
 	case pendingStatus:
-		return b.retryMonitorTransaction(url, confirmedStatus, b.retryRequest)
+		fmt.Println("case pedning")
+		retryMonitorRequest := &models.RetryMonitorRequest{
+			Url:          url,
+			Status:       txStatus,
+			RetryRequest: *b.retryRequest,
+		}
+		return b.retryMonitorTransaction(retryMonitorRequest)
 	case dneStatus:
+		fmt.Println("case dns")
 		return errors.New("item not exist")
 	default:
+		fmt.Println("status not exist")
 		return errors.New("status not exist")
 	}
 }
 
-func (b *BroadcastService) retryMonitorTransaction(url string, status string, retryRequest *models.RetryRequest) error {
-	var retryAttempt uint = 3
+func (b *BroadcastService) retryMonitorTransaction(retryMonitorRequest *models.RetryMonitorRequest) error {
+	fmt.Println("retrying")
+	retryRequest := &retryMonitorRequest.RetryRequest
+
+	var retryAttempt int = 3
 	if retryRequest.RetryAttempt != 0 {
 		retryAttempt = retryRequest.RetryAttempt
 	}
 	var retryDuration time.Duration = 5
-	if retryRequest.RetryAttempt != 0 {
-		retryAttempt = retryRequest.RetryAttempt
+	if retryRequest.RetryDuration != 0 {
+		retryDuration = retryRequest.RetryDuration
 	}
 
 	for i := range retryAttempt {
-		response, err := b.externalService.GetRequest(url)
+		response, err := b.externalService.Get(retryMonitorRequest.Url)
 		if err != nil {
 			return err
 		}
 		txStatus := response.TxStatus
 
-		if txStatus == status {
+		if txStatus == retryMonitorRequest.Status {
 			break
 		} else if txStatus == failedStatus {
 			return errors.New("broadcast failed")
@@ -98,7 +115,7 @@ func (b *BroadcastService) retryMonitorTransaction(url string, status string, re
 		}
 
 		if i < retryAttempt {
-			fmt.Printf("Attempt %v failed. Retrying in %v seconds\n", i+1, retryDuration)
+			fmt.Printf("Attempt %v failed. Retrying in %v seconds\n", i+1, retryDuration.Seconds())
 			time.Sleep(retryDuration * time.Second)
 		}
 	}
@@ -106,15 +123,15 @@ func (b *BroadcastService) retryMonitorTransaction(url string, status string, re
 	return errors.New("could not get confirmed status")
 }
 
-func (b *BroadcastService) WithRetryAttempt(retryAttempt uint) {
-	b.retryRequest.RetryAttempt = retryAttempt
+func (b *BroadcastService) WithRetryRequest(retryRequest *models.RetryRequest) *BroadcastService {
+	b.retryRequest = retryRequest
+	fmt.Printf("retryRequest : %v", b.retryRequest)
+	return b
 }
 
-func (b *BroadcastService) WithRetryDuration(retryDuration time.Duration) {
-	b.retryRequest.RetryDuration = retryDuration
-}
-
-func (b *BroadcastService) WithCustomHTTPRequest(customHTTPRequest *models.CustomHTTPRequest) {
+func (b *BroadcastService) WithCustomHTTPRequest(customHTTPRequest *models.CustomHTTPRequest) *BroadcastService {
 	b.externalService.CustomHTTPRequest = &models.CustomHTTPRequest{}
 	b.externalService.CustomHTTPRequest = customHTTPRequest
+	fmt.Printf("CustomHTTPRequest : %v", b.externalService.CustomHTTPRequest)
+	return b
 }
