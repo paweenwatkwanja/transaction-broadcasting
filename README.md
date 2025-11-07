@@ -63,8 +63,8 @@
 
 ## How to integrate it
 - I make this a public repository (for my case). This could be done with other remote repositories which can store the module and allow the user can download and implement it
-- Please refer to [GitHub Pages](https://github.com/paweenwatkwanja/raks-coin-exchange). In this example repository, how this module is integrated is shown.
-- Briefly, if the project is implemented in Go, users can simle run 'go get https://github.com/paweenwatkwanja/transaction-broadcasting' and instantiate this object wherever they want to broadcast the transaction.
+- Please refer to [Raks Coin Exchange Resopitory](https://github.com/paweenwatkwanja/raks-coin-exchange). In this example repository, how this module is integrated is shown.
+- Briefly, if the project is implemented in Go, users can simle run `go get https://github.com/paweenwatkwanja/transaction-broadcasting` and instantiate this object wherever they want to broadcast the transaction.
 
 # Transaction Status Handling
 ## CONFIRMED
