@@ -73,8 +73,8 @@ func (b *BroadcastService) HandleStatus(url string, txStatus string) (string, er
 
 func (b *BroadcastService) retryMonitorTransaction(retryMonitorRequest *models.RetryMonitorRequest) (string, error) {
 	retryRequest := &retryMonitorRequest.RetryRequest
-	retryAttempt := getRetryAttemptForBroadcast(retryRequest.RetryAttempt)
-	retryDuration := getRetryDurationForBroadcast(retryRequest.RetryDuration)
+	retryAttempt := getRetryAttemptForBroadcastOrDefault(retryRequest.RetryAttempt)
+	retryDuration := getRetryDurationForBroadcastOrDefault(retryRequest.RetryDuration)
 
 	var txStatus string
 	for i := 0; i < retryAttempt; i++ {
@@ -126,7 +126,7 @@ func newRetryMonitorRequest(url string, txStatus string, retryRequest *models.Re
 	return retryMonitorRequest
 }
 
-func getRetryAttemptForBroadcast(newRetryAttempt int) int {
+func getRetryAttemptForBroadcastOrDefault(newRetryAttempt int) int {
 	var retryAttempt int = 3
 	if newRetryAttempt != 0 {
 		retryAttempt = newRetryAttempt
@@ -134,7 +134,7 @@ func getRetryAttemptForBroadcast(newRetryAttempt int) int {
 	return retryAttempt
 }
 
-func getRetryDurationForBroadcast(newRetryDuration int) int {
+func getRetryDurationForBroadcastOrDefault(newRetryDuration int) int {
 	var retryDuration int = 5
 	if newRetryDuration != 0 {
 		retryDuration = newRetryDuration
