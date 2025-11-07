@@ -62,19 +62,19 @@
 - it returns the final txStatus and error
 
 ## How to integrate it
-### I make this a public repository (for my case). This could be done with other remote repositories which can store the module and allow the user can download and implement it
-### Please refer to [GitHub Pages](https://github.com/paweenwatkwanja/raks-coin-exchange). In this example repository, how this module is integrated is shown.
-### Briefly, if the project is implemented in Go, users can simle run 'go get https://github.com/paweenwatkwanja/transaction-broadcasting' and instantiate this object wherever they want to broadcast the transaction.
+- I make this a public repository (for my case). This could be done with other remote repositories which can store the module and allow the user can download and implement it
+- Please refer to [GitHub Pages](https://github.com/paweenwatkwanja/raks-coin-exchange). In this example repository, how this module is integrated is shown.
+- Briefly, if the project is implemented in Go, users can simle run 'go get https://github.com/paweenwatkwanja/transaction-broadcasting' and instantiate this object wherever they want to broadcast the transaction.
 
 # Transaction Status Handling
 ## CONFIRMED
-### For this status, the module exits the method right away and returns the 'CONFIRMED' string along with error with nil so that the user can handle what they would like to do next.
+- For this status, the module exits the method right away and returns the 'CONFIRMED' string along with error with nil so that the user can handle what they would like to do next.
 ## FAILED
-### For 'FAILED',  the module exits the method right away and returns the 'FAILED' string along with error so that the user can handle what they would like to do next.
+- For 'FAILED',  the module exits the method right away and returns the 'FAILED' string along with error so that the user can handle what they would like to do next.
 ## PENDING
-### For this status, this means that the transaction is in process so the program must wait.
-### To achieve this, there will be a method which will retry calling the service to check the status periodically. The retry counts and duration to wait can be configured by the users.
-### Once the retry mechanism reaches the condition to stop, it will return the error saying that 'status is still pending' and exits.
-### if the retry mechanism receives a new status that can be 'CONFIRMED', 'FAILED', or 'DNE', the method stops and return string of that status with its error, except for 'CONFIRMED' whose error is nil.
+- For this status, this means that the transaction is in process so the program must wait.
+- To achieve this, there will be a method which will retry calling the service to check the status periodically. The retry counts and duration to wait can be configured by the users.
+- Once the retry mechanism reaches the condition to stop, it will return the error saying that 'status is still pending' and exits.
+- if the retry mechanism receives a new status that can be 'CONFIRMED', 'FAILED', or 'DNE', the method stops and return string of that status with its error, except for 'CONFIRMED' whose error is nil.
 ## DNE
-### For 'DNE',  the module exits the method right away and returns the 'DNE' string along with error so that the user can handle what they would like to do next.
+- For 'DNE',  the module exits the method right away and returns the 'DNE' string along with error so that the user can handle what they would like to do next.
